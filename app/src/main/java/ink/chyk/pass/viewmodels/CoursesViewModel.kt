@@ -21,10 +21,6 @@ class CoursesViewModel(
   // 2025.3.11 更改：date 状态不再由 ViewModel 维护，转为在界面中维护
   // 为了做翻页
 
-  // 每日一言
-  private var _quote = MutableStateFlow<HitokotoQuote?>(null)
-  val quote: StateFlow<HitokotoQuote?> = _quote
-
   // 日期格式化器
   // 储存成一个状态避免啰唆
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
@@ -45,9 +41,15 @@ class CoursesViewModel(
 
   fun getCoursesByDate(dateId: String): List<Course> {
     // 根据 dateId 获取课程
-    return mmkv.decodeString("course_${dateId}")?.let {
-      Json.decodeFromString(it)
-    } ?: emptyList()
+    try {
+      return mmkv.decodeString("course_${dateId}")?.let {
+        Json.decodeFromString(it)
+      } ?: emptyList()
+    } catch (e: Exception) {
+      // 解析失败，清空课表重新导入
+      mmkv.remove("course_keys")
+      return emptyList()
+    }
   }
 
   fun getWeekday(dateId: String): String {
@@ -79,37 +81,6 @@ class CoursesViewModel(
       val thatDateId = thatDate.format(formatter)
       val courseCount = getCoursesByDate(thatDateId).size
       thatDate to thatDateId to courseCount
-    }
-  }
-
-  private suspend fun initQuote() {
-    // 初始化每日一言
-    try {
-      _quote.value = Hitokoto().getQuote()
-    } catch (e: Exception) {
-      _quote.value = HitokotoQuote(
-        id = 0,
-        uuid = "",
-        hitokoto = "网络错误",
-        type = "",
-        from = "",
-        fromWho = "",
-        creator = "",
-        creatorUid = 0,
-        reviewer = 0,
-        commitFrom = "",
-        createdAt = 0,
-        length = 0
-      )
-    }
-  }
-
-  init {
-    // ViewModel 对象在 MainActivity 创建时就被实例化
-    // 而加载每日一言时开销不大
-    // 所以在这里直接初始化
-    viewModelScope.launch {
-      initQuote()
     }
   }
 

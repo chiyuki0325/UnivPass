@@ -23,6 +23,10 @@ class AppsViewModel(
 ) : PersonalViewModel(
   pass, mmkv
 ) {
+  // 卡片顺序
+  private var _appCardsOrder = MutableStateFlow(getAppCardsOrder())
+  val appCardsOrder: StateFlow<List<String>> = _appCardsOrder
+
   // 加载状态：校园跑
   private var _campusRunState = MutableStateFlow(LoadingState.LOADING)
   val campusRunState: StateFlow<LoadingState> = _campusRunState
@@ -74,12 +78,25 @@ class AppsViewModel(
     R.string.run_t5_5
   )
 
+  fun getAppCardsOrder(): List<String> {
+    return mmkv.decodeString("app_cards_order")?.split(",") ?: listOf(
+      "campus_run",
+      "mail_box",
+    )
+  }
+
+  fun setAppCardsOrder(order: List<String>) {
+    _appCardsOrder.value = order
+    mmkv.encode("app_cards_order", order.joinToString(","))
+  }
+
   fun initCampusRun() {
     viewModelScope.launch {
       withContext(Dispatchers.IO) {
         try {
           // 登录步道乐跑
           campusRun.loginCampusRun()
+          _campusRunState.value = LoadingState.PARTIAL_SUCCESS
           val index = campusRun.getIndex()
           _termName.value = index?.term_name ?: "服务器返回错误"
           _beforeRun.value = campusRun.getBeforeRun()

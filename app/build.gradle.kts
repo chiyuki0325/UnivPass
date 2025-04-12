@@ -152,4 +152,5 @@ dependencies {
     implementation(libs.coil.net)
     implementation(libs.tbs)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.reorderable)
 }
