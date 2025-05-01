@@ -30,7 +30,7 @@ fun CoursesScreen(
   }
 
   // date 状态放在最顶级组件 之后逐级传递
-  val dateState = MutableStateFlow<String>(viewModel.today)
+  val dateState = remember { MutableStateFlow<String>(viewModel.today) }
 
   if (!viewModel.isCourseImported()) {
     return ImportCoursesSplash()

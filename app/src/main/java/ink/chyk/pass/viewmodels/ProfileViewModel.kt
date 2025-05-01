@@ -13,7 +13,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import ink.chyk.pass.activities.*
 import ink.chyk.pass.api.*
-import kotlin.random.Random
 
 class ProfileViewModel(
   val mmkv: MMKV,
@@ -40,26 +39,39 @@ class ProfileViewModel(
   private suspend fun _refreshUserInfo() {
     prepareSessionAnd { session ->
       try {
-        val userInfoResponse = pass.getUserInfo(session)
-        _userInfo.value = userInfoResponse.first?.info
-        updateSession(userInfoResponse.second)
+        // 2025.5.1 使用协程来并行处理部分网络请求，以加快 ui 的加载速度
+        // session 的先后，已经无所谓啦！（开摆！
 
-        val idsResponse = pass.getPersonalDataIds(session)
-        val ids = idsResponse.first
-        updateSession(idsResponse.second)
+        val ids: PersonalDataIdOuter?
 
-        if (ids == null) {
+        // 第一步：获取用户信息
+        val result = coroutineScope {
+          val deferredUserInfo = async { pass.getUserInfo(session) }
+          val deferredIds = async { pass.getPersonalDataIds(session) }
+          val (userInfoResponse, idsResponse) = awaitAll(deferredUserInfo, deferredIds)
+          _userInfo.value = (userInfoResponse.first as UserInfoOuter?)?.info
+          ids = idsResponse.first as PersonalDataIdOuter?
+          // updateSession(userInfoResponse.second)
+
+          return@coroutineScope ids != null
+        }
+
+        if (!result) {
+          // ids 获取失败
           return@prepareSessionAnd
         }
 
 
-        val cardBalanceResponse = pass.getCardBalance(session) 
-        _cardBalance.value = cardBalanceResponse.first?.data
-
-        delay(Random.nextInt(120).toLong())
-
-        val netBalanceResponse = pass.getNetBalance(session) 
-        _netBalance.value = netBalanceResponse.first?.data
+        // 第二步：获取校园卡余额、网络余额
+        coroutineScope {
+          @Suppress("NAME_SHADOWING")
+          val ids = ids!!
+          val deferredCardBalance = async { pass.getCardBalance(session) } 
+          val deferredNetBalance = async { pass.getNetBalance(session) } 
+          val (cardBalanceResponse, netBalanceResponse) = awaitAll(deferredCardBalance, deferredNetBalance)
+          _cardBalance.value = cardBalanceResponse.first?.data
+          _netBalance.value = netBalanceResponse.first?.data
+        }
 
         _headers.value = NetworkHeaders.Builder()
           .add("Referer", "http://localhost:8070") 

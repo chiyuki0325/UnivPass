@@ -379,6 +379,9 @@ fun TodayCoursesList(
 ) {
   val ctx = LocalContext.current
   var previousIcon = 0  // 用于判断是否需要显示早午晚标题
+
+  var lastEnd = -1
+
   todayCourses.forEach {
     val icon = when (it.period) {
       CoursePeriod.MORNING -> MORNING_ICON
@@ -416,6 +419,8 @@ fun TodayCoursesList(
       previousIcon = icon
     }
 
+    val isOverlapped = it.st <= lastEnd
+
     Box(
       modifier = Modifier
         .height(64.dp)
@@ -436,12 +441,14 @@ fun TodayCoursesList(
             Text(
               it.start,
               fontFamily = FontFamily(Font(R.font.roboto_numeric)),
-              fontWeight = FontWeight.Medium
+              fontWeight = FontWeight.Medium,
+              color = if (isOverlapped) Color.Red else Color.Unspecified
             )
             Text(
               it.end,
               fontFamily = FontFamily(Font(R.font.roboto_numeric)),
-              fontWeight = FontWeight.Medium
+              fontWeight = FontWeight.Medium,
+              color = if (isOverlapped) Color.Red else Color.Unspecified
             )
           }
           Spacer(modifier = Modifier.width(8.dp))
@@ -458,8 +465,13 @@ fun TodayCoursesList(
           Column(modifier = Modifier.weight(1f)) {
             // 课程名称
             Text(
-              Pangu.spacingText(it.name),
-              style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp),
+              (if (isOverlapped) stringResource(R.string.course_overlapped) + " " else "") + Pangu.spacingText(
+                it.name
+              ),
+              style = TextStyle(
+                fontWeight = if (isOverlapped) FontWeight.ExtraBold else FontWeight.Bold,
+                fontSize = 20.sp
+              ),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis
             )
@@ -479,6 +491,8 @@ fun TodayCoursesList(
         )
       }
     }
+
+    lastEnd = it.en
   }
 }
 

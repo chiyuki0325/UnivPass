@@ -93,4 +93,5 @@
     <string name="sort_apps">调整应用顺序</string>
     <string name="done">完成</string>
     <string name="current_week_overview">第 %1$d 周课程总览</string>
+    <string name="course_overlapped">[撞课]</string>
 </resources>

@@ -94,13 +94,22 @@ class AppsViewModel(
     viewModelScope.launch {
       withContext(Dispatchers.IO) {
         try {
-          // 登录步道乐跑
+          // 登录校园跑
           campusRun.loginCampusRun()
           _campusRunState.value = LoadingState.PARTIAL_SUCCESS
-          val index = campusRun.getIndex()
-          _termName.value = index?.term_name ?: "服务器返回错误"
-          _beforeRun.value = campusRun.getBeforeRun()
-          _termRunRecord.value = campusRun.getTermRunRecord()
+          coroutineScope {
+            val deferredIndex = async { campusRun.getIndex() }
+            val deferredBeforeRun = async { campusRun.getBeforeRun() }
+            val deferredTermRunRecord = async { campusRun.getTermRunRecord() }
+            val (
+              index,
+              beforeRun,
+              termRunRecord
+            ) = awaitAll(deferredIndex, deferredBeforeRun, deferredTermRunRecord)
+            _termName.value = (index as WpIndexResponse?)?.term_name ?: "服务器返回错误"
+            _beforeRun.value = beforeRun as BeforeRunResponse?
+            _termRunRecord.value = termRunRecord as GetTermRunRecordResponse?
+          }
           _campusRunState.value = LoadingState.SUCCESS
         } catch (e: Exception) {
           Log.e("AppsViewModel", "initCampusRun: ${e.message}")

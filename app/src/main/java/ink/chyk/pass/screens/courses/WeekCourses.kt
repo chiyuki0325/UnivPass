@@ -88,7 +88,6 @@ private fun WeekCoursesGridOuter(
   val scope = rememberCoroutineScope()
   val density = LocalDensity.current
   val spacingPx = with(density) { 4.dp.toPx() }
-  val scrollState = rememberScrollState()
 
   // 先前 dateState 的值
   var previousDate by remember { mutableStateOf(date) }
@@ -223,21 +222,21 @@ private fun WeekCoursesGridOuter(
   ) {
     // 前一页
     WeekCoursesGrid(
-      viewModel, leftDate, widthDp, scrollState,
+      viewModel, leftDate, widthDp,
       modifier = Modifier
         .offset { IntOffset((offsetX - widthPx - spacingPx).roundToInt(), 0) }
     )
 
     // 当前页
     WeekCoursesGrid(
-      viewModel, middleDate, widthDp, scrollState,
+      viewModel, middleDate, widthDp,
       modifier = Modifier
         .offset { IntOffset(offsetX.roundToInt(), 0) }
     )
 
     // 后一页
     WeekCoursesGrid(
-      viewModel, rightDate, widthDp, scrollState,
+      viewModel, rightDate, widthDp,
       modifier = Modifier
         .offset { IntOffset((offsetX + widthPx + spacingPx).roundToInt(), 0) }
     )
@@ -251,12 +250,12 @@ private fun WeekCoursesGrid(
   viewModel: CoursesViewModel,
   date: String,
   widthDp: Dp,
-  scrollState: ScrollState,
   modifier: Modifier = Modifier,
 ) {
   val thisWeekDates = viewModel.thisWeekDates(date)
   val thisWeekCourses = thisWeekDates.map { viewModel.getCoursesByDate(it.first.second) }
   val isDark = isSystemInDarkTheme()
+  val scrollState = rememberScrollState()
 
   // 本周课程表格
   Column(
@@ -310,10 +309,19 @@ private fun WeekCoursesGrid(
           verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
           courses.forEach {
+            val name = if (it.st < lastEnd + 1) {
+              // 发生撞课
+              "[撞课] ${it.name}"
+            } else {
+              // 没有撞课
+              it.name
+            }
+
             if (it.st > lastEnd + 1) {
               // 课程开始时间大于上一个课程结束时间，说明有间隔
               Spacer(modifier = Modifier.height(GRID_HEIGHT * (it.st - lastEnd - 1) + 2.dp * (it.st - lastEnd - 2)))
             }
+
             if (it.period.ordinal != lastPeriod) {
               // 课程时间段不一样，说明隔着午休 / 晚休
               repeat(it.period.ordinal - lastPeriod) {
@@ -341,7 +349,7 @@ private fun WeekCoursesGrid(
                 horizontalAlignment = Alignment.CenterHorizontally,
               ) {
                 Text(
-                  text = it.name,
+                  text = name,
                   style = MaterialTheme.typography.bodySmall,
                   fontWeight = FontWeight.Bold,
                   color = Color(HashColorHelper.calcTextColor(it.name, isDark)),
