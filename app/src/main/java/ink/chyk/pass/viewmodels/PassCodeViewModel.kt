@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.*
 
 class PassCodeViewModel(
   override val mmkv: MMKV,
-  override val pass: PassAPI = PassAPI { false }
+  override val pass: PassApi = PassApi { false }
   // 需要使其抛出异常以便显示空白二维码
 ) : BasicViewModel(mmkv, pass) {
   // 通行码 ViewModel 

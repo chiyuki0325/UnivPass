@@ -11,7 +11,7 @@ class ProfileViewModelFactory(
     if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
       return ProfileViewModel(
         MMKV.defaultMMKV(),
-        PassAPI(onFailed)
+        PassApi(onFailed)
       ) as T
     }
     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

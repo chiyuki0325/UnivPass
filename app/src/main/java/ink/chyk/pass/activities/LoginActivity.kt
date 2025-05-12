@@ -227,7 +227,7 @@ fun LoginButton(
 
         coroScope.launch {
           try {
-            val pass = PassAPI {
+            val pass = PassApi {
               throw RequestFailedException("请求失败")
             }
             val ticket = pass.loginPortalTicket(studentId, password)

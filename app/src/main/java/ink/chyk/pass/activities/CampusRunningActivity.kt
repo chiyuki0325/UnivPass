@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tencent.mmkv.MMKV
 import ink.chyk.pass.*
 import ink.chyk.pass.R
+import ink.chyk.pass.web.*
 
 class CampusRunningActivity : ComponentActivity() {
   // 校园乐跑小程序窗口
@@ -79,7 +80,7 @@ class CampusRunningActivity : ComponentActivity() {
     // Use the permission state from the activity
     val permissionGranted by remember { permissionState }
 
-    val webViewState = remember { mutableStateOf<WebView?>(null) }
+    val webViewState = rememberWebViewState()
 
     AppTheme {
       Scaffold { innerPadding ->
@@ -87,14 +88,16 @@ class CampusRunningActivity : ComponentActivity() {
         val isDark = if (alwaysDark) true else isSystemInDarkTheme()
 
         if (permissionGranted) {
-          CustomWebView(
-            url,
-            webViewState,
-            Modifier.padding(innerPadding),
-            listenBack = false,
-            finish = { finish() },
-            isDarkMode = isDark,
-          )
+          key(url) {
+            CustomWebView(
+              url,
+              state = webViewState,
+              modifier = Modifier.padding(innerPadding),
+              listenBack = false,
+              finish = { finish() },
+              isDarkMode = isDark,
+            )
+          }
         } else {
           PermissionGrantScreen(Modifier.padding(innerPadding))
         }
@@ -109,9 +112,9 @@ class CampusRunningActivity : ComponentActivity() {
       val observer = LifecycleEventObserver { _, event ->
         lifecycleEvent.value = event
         when (event) {
-          Lifecycle.Event.ON_PAUSE -> webViewState.value?.onPause()
-          Lifecycle.Event.ON_RESUME -> webViewState.value?.onResume()
-          Lifecycle.Event.ON_DESTROY -> webViewState.value?.destroy()
+          Lifecycle.Event.ON_PAUSE -> webViewState.webView?.onPause()
+          Lifecycle.Event.ON_RESUME -> webViewState.webView?.onResume()
+          Lifecycle.Event.ON_DESTROY -> webViewState.webView?.destroy()
           else -> {}
         }
       }
@@ -120,7 +123,7 @@ class CampusRunningActivity : ComponentActivity() {
 
       onDispose {
         lifecycleOwner.lifecycle.removeObserver(observer)
-        webViewState.value?.destroy()
+        webViewState.webView?.destroy()
       }
     }
 
@@ -138,7 +141,11 @@ class CampusRunningActivity : ComponentActivity() {
 
   @Composable
   fun PermissionGrantScreen(modifier: Modifier = Modifier) {
-    ErrorScreen(modifier, R.string.location_permission_required, R.string.location_permission_required_content)
+    ErrorScreen(
+      modifier,
+      R.string.location_permission_required,
+      R.string.location_permission_required_content
+    )
   }
 
   @Composable

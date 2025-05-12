@@ -9,7 +9,7 @@ import kotlin.Pair
 
 
 class ImportCoursesViewModel(
-  private val pass: PassAPI,
+  private val pass: PassApi,
   private val mmkv: MMKV,
 ) : ViewModel() {
 

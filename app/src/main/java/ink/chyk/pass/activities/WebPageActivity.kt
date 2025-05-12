@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
-import ink.chyk.pass.*
 import ink.chyk.pass.ui.theme.*
+import ink.chyk.pass.web.*
 
 class WebPageActivity : ComponentActivity() {
   // 采用腾讯 X5 浏览器内核模拟小程序运行环境
@@ -37,8 +37,10 @@ class WebPageActivity : ComponentActivity() {
     cookies: String?,
     innerPadding: PaddingValues
   ) {
+    val state = rememberWebViewState()
     CustomWebView(
       url = url,
+      state = state,
       modifier = Modifier
         .fillMaxSize()
         .padding(innerPadding),

@@ -94,4 +94,23 @@
     <string name="done">完成</string>
     <string name="current_week_overview">第 %1$d 周课程总览</string>
     <string name="course_overlapped">[撞课]</string>
+    <string name="not_campus_network">未连接校园网</string>
+    <string name="gateway_logged_out">点击按钮以登录网络</string>
+    <string name="failed_to_fetch_user_data">获取用户数据失败</string>
+    <string name="current_online_ip">当前在线 IP</string>
+    <string name="traffic_used">已用</string>
+    <string name="traffic_left">剩余</string>
+    <string name="yuan">元</string>
+    <string name="devices_online_1">共</string>
+    <string name="devices_online_2">台设备在线</string>
+    <string name="reorder_details_1">勾选的应用卡片将会在首屏展示</string>
+    <string name="reorder_details_2">其余卡片将被隐藏至「更多」中</string>
+    <string name="more">更多</string>
+    <string name="more_apps">更多应用</string>
+    <string name="payment_query">消费记录</string>
+    <string name="blackboard_platform">BB 平台</string>
+    <string name="library">图书馆</string>
+    <string name="webvpn">WebVPN</string>
+    <string name="bus_booking">班车预约</string>
+    <string name="place_booking">场馆预约</string>
 </resources>

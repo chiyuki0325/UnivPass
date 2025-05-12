@@ -7,7 +7,7 @@ import ink.chyk.pass.*
 import ink.chyk.pass.api.*
 
 open class PersonalViewModel(
-  private val pass: PassAPI,
+  private val pass: PassApi,
   private val mmkv: MMKV,
 ): ViewModel() {
 

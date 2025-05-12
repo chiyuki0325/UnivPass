@@ -13,10 +13,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import ink.chyk.pass.activities.*
 import ink.chyk.pass.api.*
+import androidx.core.net.toUri
 
 class ProfileViewModel(
   val mmkv: MMKV,
-  val pass: PassAPI
+  val pass: PassApi
 ) : PersonalViewModel(pass, mmkv) {
   private val _userInfo = MutableStateFlow<UserInfo?>(null)
   val userInfo: StateFlow<UserInfo?> = _userInfo
@@ -114,7 +115,7 @@ class ProfileViewModel(
       .setExitAnimations(context, android.R.anim.slide_in_left, android.R.anim.slide_out_right)
       .build()
 
-    intent.launchUrl(context, android.net.Uri.parse(redirectUrl))
+    intent.launchUrl(context, redirectUrl.toUri())
   }
 
   fun recharge(context: Context) {

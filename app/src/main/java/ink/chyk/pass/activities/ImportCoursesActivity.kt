@@ -54,7 +54,7 @@ fun ImportCoursesScreen() {
   // 课程表导入窗口
 
   val ctx = LocalContext.current
-  val viewModel = viewModel<ImportCoursesViewModel>(factory = ImportCoursesViewModelFactory(PassAPI( {
+  val viewModel = viewModel<ImportCoursesViewModel>(factory = ImportCoursesViewModelFactory(PassApi( {
     // 导入失败
     false
   })))

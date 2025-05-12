@@ -5,7 +5,7 @@ import com.tencent.mmkv.*
 import ink.chyk.pass.api.*
 
 class ImportCoursesViewModelFactory(
-  private val pass: PassAPI
+  private val pass: PassApi
 ) : ViewModelProvider.Factory {
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(ImportCoursesViewModel::class.java)) {

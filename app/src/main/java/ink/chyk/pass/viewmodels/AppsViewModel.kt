@@ -3,29 +3,34 @@ package ink.chyk.pass.viewmodels
 import android.content.*
 import android.util.*
 import android.widget.*
+import androidx.browser.customtabs.*
 import androidx.compose.ui.graphics.*
+import androidx.core.net.*
 import androidx.lifecycle.*
 import com.tencent.mmkv.*
-import ink.chyk.pass.LoadingState
-import ink.chyk.pass.R
+import ink.chyk.pass.*
 import ink.chyk.pass.activities.*
 import ink.chyk.pass.api.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.*
+import java.io.*
+import java.net.SocketTimeoutException
 import kotlin.Pair
+import ink.chyk.pass.R
 
 @ExperimentalSerializationApi
 class AppsViewModel(
-  private val pass: PassAPI,
+  private val pass: PassApi,
   private val mmkv: MMKV,
-  private val campusRun: CampusRun
+  private val campusRun: CampusRun,
+  private val ipgw: IpGatewayApi,
 ) : PersonalViewModel(
   pass, mmkv
 ) {
   // 卡片顺序
   private var _appCardsOrder = MutableStateFlow(getAppCardsOrder())
-  val appCardsOrder: StateFlow<List<String>> = _appCardsOrder
+  val appCardsOrder: StateFlow<List<Pair<String, Boolean>>> = _appCardsOrder
 
   // 加载状态：校园跑
   private var _campusRunState = MutableStateFlow(LoadingState.LOADING)
@@ -49,6 +54,17 @@ class AppsViewModel(
   private var _mailList = MutableStateFlow<MailListResponse?>(null)
   val mailList: StateFlow<MailListResponse?> = _mailList
   private val _coreMailRedirector = MutableStateFlow<String?>(null)
+
+  // 加载状态：网关
+  private var _ipGatewayState = MutableStateFlow(LoadingState.LOADING)
+  val ipGatewayState: StateFlow<LoadingState> = _ipGatewayState
+
+  // 网关 acId
+  private var _gatewayAcId = MutableStateFlow<String?>(null)
+
+  // 网关信息
+  private var _gatewayInfo = MutableStateFlow<IpGatewayInfo?>(null)
+  val gatewayInfo: StateFlow<IpGatewayInfo?> = _gatewayInfo
 
   private val t1 = arrayOf(
     R.string.run_t1_1,
@@ -78,16 +94,30 @@ class AppsViewModel(
     R.string.run_t5_5
   )
 
-  fun getAppCardsOrder(): List<String> {
-    return mmkv.decodeString("app_cards_order")?.split(",") ?: listOf(
-      "campus_run",
-      "mail_box",
+  fun getAppCardsOrder(): List<Pair<String, Boolean>> {
+    val default = listOf(
+      "campus_run" to true,
+      "mail_box" to true,
+      "ip_gateway" to true
     )
+    try {
+      val list = mmkv.decodeString("app_cards_order")?.split(",")?.map {
+        val split = it.split(":")
+        split[0] to split[1].toBoolean()
+      }
+      return if (list != null && list.size == default.size) {
+        list
+      } else {
+        default
+      }
+    } catch (e: Exception) {
+      return default
+    }
   }
 
-  fun setAppCardsOrder(order: List<String>) {
+  fun setAppCardsOrder(order: List<Pair<String, Boolean>>) {
     _appCardsOrder.value = order
-    mmkv.encode("app_cards_order", order.joinToString(","))
+    mmkv.encode("app_cards_order", order.map { "${it.first}:${it.second}" }.joinToString(","))
   }
 
   fun initCampusRun() {
@@ -197,6 +227,95 @@ class AppsViewModel(
         context.startActivity(intent)
       } else {
         Toast.makeText(context, R.string.error_open_coremail, Toast.LENGTH_SHORT).show()
+      }
+    }
+  }
+
+  private suspend fun refreshIpGateway() {
+    _ipGatewayState.value = LoadingState.LOADING
+    _gatewayAcId.value = ipgw.getAcId()
+    _gatewayInfo.value = ipgw.getOnlineInfo()
+    _ipGatewayState.value = LoadingState.SUCCESS
+  }
+
+
+  fun initIpGateway() {
+    viewModelScope.launch {
+      withContext(Dispatchers.IO) {
+        try {
+          refreshIpGateway()
+        } catch (e: InterruptedIOException) {
+          _ipGatewayState.value = LoadingState.FAILED
+        } catch (e: IpGatewayExecption) {
+          e.printStackTrace()
+          _ipGatewayState.value = LoadingState.PARTIAL_SUCCESS
+        }
+      }
+    }
+  }
+
+  fun loginIpGateway() {
+    viewModelScope.launch {
+      withContext(Dispatchers.IO) {
+        try {
+          _ipGatewayState.value = LoadingState.LOADING
+          ipgw.loginGateway(_gatewayAcId.value ?: throw IllegalStateException("acId is null"))
+          refreshIpGateway()
+        } catch (e: SocketTimeoutException) {
+          _ipGatewayState.value = LoadingState.FAILED
+        } catch (e: IpGatewayExecption) {
+          e.printStackTrace()
+          _ipGatewayState.value = LoadingState.PARTIAL_SUCCESS
+        }
+      }
+    }
+  }
+
+  fun logoutIpGateway() {
+    viewModelScope.launch {
+      withContext(Dispatchers.IO) {
+        try {
+          ipgw.logoutGateway(
+            acId = _gatewayAcId.value ?: throw IllegalStateException("acId is null"),
+            username = _gatewayInfo.value?.onlineInfo?.userName
+              ?: throw IllegalStateException("username is null"),
+            ip = _gatewayInfo.value?.onlineInfo?.onlineIp
+              ?: throw IllegalStateException("ip is null")
+          )
+          refreshIpGateway()
+        } catch (e: SocketTimeoutException) {
+          _ipGatewayState.value = LoadingState.FAILED
+        } catch (e: IpGatewayExecption) {
+          e.printStackTrace()
+          _ipGatewayState.value = LoadingState.PARTIAL_SUCCESS
+        }
+      }
+    }
+  }
+
+  // 启动网页应用
+  fun openWebApp(ctx: Context, redirectUrl: String) {
+    viewModelScope.launch {
+      withContext(Dispatchers.IO) {
+        var portalTicket = getPortalTicket()
+        var webAppTicket: String
+        try {
+          webAppTicket = pass.loginCampusAppTicket(portalTicket, redirectUrl)
+        } catch (e: TicketFailedException) {
+          portalTicket = getPortalTicket(true)
+          webAppTicket = pass.loginCampusAppTicket(portalTicket, redirectUrl)
+        }
+
+        // Custom Tabs
+        val intent = CustomTabsIntent.Builder()
+          .setShowTitle(false)
+          .setUrlBarHidingEnabled(true)
+          .setStartAnimations(ctx, R.anim.slide_in_right, R.anim.slide_out_left)
+          .setExitAnimations(ctx, android.R.anim.slide_in_left, android.R.anim.slide_out_right)
+          .build()
+
+        val webAppUrl = "$redirectUrl" // 根据后端不同，修改 webAppTicket 参数名 
+        intent.launchUrl(ctx, webAppUrl.toUri())
       }
     }
   }

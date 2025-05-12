@@ -43,7 +43,7 @@ class SettingsActivity : ComponentActivity() {
 }
 
 @Composable
-fun Settings() {
+private fun Settings() {
   val ctx = LocalContext.current
   val mmkv = MMKV.defaultMMKV()
   var antiFlashlightState by remember {

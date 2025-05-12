@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.*
 
 abstract class BasicViewModel(
   open val mmkv: MMKV,
-  open val pass: PassAPI
+  open val pass: PassApi
 ) : ViewModel() {
   // 一些参数，Kotlin 状态流机制
 
